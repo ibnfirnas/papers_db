@@ -43,6 +43,7 @@ case "$1" in
         tag_add "Papers/$fname" "$tag"
         done
     else
+        rm -rf "$tmpdir"
         echo "Failed to download"
         exit 1
     fi
