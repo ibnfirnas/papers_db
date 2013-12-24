@@ -51,12 +51,12 @@ tag_search() {
 
     subselect=""
     if [ "$#" -gt "1" ]; then
-	tag="${arg[1]}"
-	subselect="SELECT doc_id FROM tags WHERE tag = \"$tag\""
+    tag="${arg[1]}"
+    subselect="SELECT doc_id FROM tags WHERE tag = \"$tag\""
     fi
 
     for ((i=2;i<=$1;i++)); do
-	subselect=$subselect" INTERSECT SELECT doc_id FROM tags WHERE tag = \"${arg[i]}\""
+    subselect=$subselect" INTERSECT SELECT doc_id FROM tags WHERE tag = \"${arg[i]}\""
     done
 
     select="SELECT path FROM papers WHERE doc_id IN ($subselect)"
