@@ -31,10 +31,10 @@ case "$1" in
     shift
     tmpdir=$(mktemp -d papers_db.XXXXXXXXXX)
     pushd "$tmpdir"
-    wget "$1"
+    wget_status=$(wget "$1"; echo $?)
     fname="$(ls)"
     popd
-    if [ -f "$tmpdir/$fname" ]; then
+    if [ -f "$tmpdir/$fname" -a "$wget_status" -eq 0 ]; then
         mkdir -p Papers
         mv "$tmpdir/$fname" "Papers/$fname"
         add "Papers/$fname"
