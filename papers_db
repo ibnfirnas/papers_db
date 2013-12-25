@@ -155,9 +155,10 @@ dispatch() {
 
 
 main() {
+    trap env_clean EXIT
     env_create
     dispatch "$@"
-    env_clean
 }
+
 
 main "$@"
