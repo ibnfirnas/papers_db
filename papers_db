@@ -2,16 +2,17 @@
 
 set -e
 
-DIR_ROOT="$HOME/.papers_db"
-DIR_DATA="$DIR_ROOT/data"
-DIR_DATA_DOWNLOADS="$DIR_DATA/downloads"
-DIR_DATA_PAPERS="$DIR_DATA/papers"
-FILE_DB="$DIR_DATA/papers.db"
+declare -r DIR_ROOT="$HOME/.papers_db"
+declare -r DIR_DATA="$DIR_ROOT/data"
+declare -r DIR_DATA_DOWNLOADS="$DIR_DATA/downloads"
+declare -r DIR_DATA_PAPERS="$DIR_DATA/papers"
+declare -r FILE_DB="$DIR_DATA/papers.db"
 
 
-MD5SUM_CMD="md5sum"
-if ! echo "foo" | $MD5SUM_CMD >/dev/null 2>&1; then
-    MD5SUM_CMD=md5
+if ! echo "foo" | md5sum >/dev/null 2>&1; then
+    declare -r MD5SUM_CMD='md5'
+else
+    declare -r MD5SUM_CMD="md5sum"
 fi
 
 
@@ -46,7 +47,7 @@ init() {
 }
 
 delete() {
-    md5=$(md5cmd "$paper")
+    declare -r md5=$(md5cmd "$paper")
     db "DELETE FROM tags WHERE doc_id = \"$md5\""
     db "DELETE FROM papers WHERE doc_id = \"$md5\""
 }
@@ -56,38 +57,38 @@ all_papers() {
 }
 
 add() {
-    paper="$1"
+    declare -r paper="$1"
     [ -f "$paper" ] || die "$paper does not exist"
-    md5=$(md5cmd "$paper")
+    declare -r md5=$(md5cmd "$paper")
     db "INSERT INTO papers (doc_id, path) VALUES(\"$md5\", \"$paper\")"
 }
 
 tag_add() {
-    paper="$1"
-    tag="$2"
+    declare -r paper="$1"
+    declare -r tag="$2"
 
-    md5=$(md5cmd "$paper")
+    declare -r md5=$(md5cmd "$paper")
 
     db "INSERT INTO tags (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
 }
 
 tag_show() {
-    paper="$1"
-    md5=$(md5cmd "$paper")
+    declare -r paper="$1"
+    declare -r md5=$(md5cmd "$paper")
     db "SELECT tag FROM tags WHERE doc_id = \"$md5\""
 }
 
 tag_search() {
-    arg=("$@")
+    declare -r arg=("$@")
 
-    subselect=""
+    local subselect=""
     if [ "$#" -gt "1" ]; then
-    tag="${arg[1]}"
-    subselect="SELECT doc_id FROM tags WHERE tag = \"$tag\""
+    declare -r tag="${arg[1]}"
+    local subselect="SELECT doc_id FROM tags WHERE tag = \"$tag\""
     fi
 
     for ((i=2;i<=$1;i++)); do
-    subselect=$subselect" INTERSECT SELECT doc_id FROM tags WHERE tag = \"${arg[i]}\""
+    local subselect=$subselect" INTERSECT SELECT doc_id FROM tags WHERE tag = \"${arg[i]}\""
     done
 
     select="SELECT path FROM papers WHERE doc_id IN ($subselect)"
@@ -108,7 +109,7 @@ dispatch() {
             all_papers
     ;;  "add")
             shift
-            paper="$1"
+            declare -r paper="$1"
             add "$paper"
             shift
             for tag in "$@"; do
@@ -116,14 +117,14 @@ dispatch() {
             done
     ;;  "add-from-url")
             shift
-            tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
+            declare -r tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
             pushd "$tmpdir"
-            wget_status=$(wget "$1"; echo $?)
-            file_name="$(ls)"
+            declare -r wget_status=$(wget "$1"; echo $?)
+            declare -r file_name="$(ls)"
             popd
             if [ -f "$tmpdir/$file_name" -a "$wget_status" -eq 0 ]; then
-                file_path_tmp="$tmpdir/$file_name"
-                file_path_perm="$DIR_DATA_PAPERS/$file_name"
+                declare -r file_path_tmp="$tmpdir/$file_name"
+                declare -r file_path_perm="$DIR_DATA_PAPERS/$file_name"
                 mv "$file_path_tmp" "$file_path_perm"
                 add "$file_path_perm"
                 shift
