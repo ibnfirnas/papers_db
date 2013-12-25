@@ -1,5 +1,13 @@
 #! /usr/bin/env bash
 
+set -e
+
+MD5SUM_CMD="md5sum"
+if ! echo "foo" | $MD5SUM_CMD >/dev/null 2>&1; then
+    MD5SUM_CMD=md5
+fi
+
+
 die() {
     echo "$1"
     exit 1
@@ -67,3 +75,57 @@ tag_search() {
 tag_all() {
     sqlite3 papers.db "SELECT DISTINCT tag FROM tags"
 }
+
+
+case "$1" in
+    "init")
+        init
+;;  "all")
+        all_papers
+;;  "add")
+        shift
+        paper="$1"
+        add "$paper"
+        shift
+        for tag in "$@"; do
+            tag_add "$paper" "$tag"
+        done
+;;  "add-from-url")
+        shift
+        tmpdir=$(mktemp -d papers_db.XXXXXXXXXX)
+        pushd "$tmpdir"
+        wget_status=$(wget "$1"; echo $?)
+        fname="$(ls)"
+        popd
+        if [ -f "$tmpdir/$fname" -a "$wget_status" -eq 0 ]; then
+            mkdir -p Papers
+            mv "$tmpdir/$fname" "Papers/$fname"
+            add "Papers/$fname"
+            shift
+            for tag in "$@"; do
+                tag_add "Papers/$fname" "$tag"
+            done
+        else
+            rm -rf "$tmpdir"
+            echo "Failed to download"
+            exit 1
+        fi
+        rm -rf "$tmpdir"
+;;  "tag-show")
+        tag_show "$2"
+;;  "tag-search")
+        shift
+        tag_search "$#" "$@"
+;;  "tag-all")
+        tag_all
+;;  "tag-add")
+        shift
+        paper="$1"
+        shift
+        for tag in "$@"; do
+            tag_add "$paper" "$tag"
+        done
+;;  *)
+        echo "Unknown command: $1"
+        exit 1
+esac
