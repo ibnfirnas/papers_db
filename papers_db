@@ -13,7 +13,7 @@ declare -r DB_TBL_TAGS='tags'
 
 
 if ! echo "foo" | md5sum > /dev/null 2>&1; then
-    declare -r MD5SUM_CMD='md5'
+    declare -r MD5SUM_CMD='md5 -r'
 else
     declare -r MD5SUM_CMD="md5sum"
 fi
