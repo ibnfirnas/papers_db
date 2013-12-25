@@ -19,6 +19,24 @@ else
 fi
 
 
+# -----------------------------------------------------------------------------
+# Misc helpers
+# -----------------------------------------------------------------------------
+
+die() {
+    echo "$1"
+    exit 1
+}
+
+md5cmd() {
+    $MD5SUM_CMD "$1" | awk '{ print $1 }'
+}
+
+
+# -----------------------------------------------------------------------------
+# Environment create/destroy
+# -----------------------------------------------------------------------------
+
 env_create() {
     mkdir -p "$DIR_ROOT"
     mkdir -p "$DIR_DATA"
@@ -30,40 +48,19 @@ env_clean() {
     rm -rf "$DIR_DATA_DOWNLOADS"
 }
 
-die() {
-    echo "$1"
-    exit 1
-}
 
-md5cmd() {
-    $MD5SUM_CMD "$1" | awk '{ print $1 }'
-}
+# -----------------------------------------------------------------------------
+# DB helpers
+# -----------------------------------------------------------------------------
 
 db() {
     sqlite3 "$FILE_DB" "$@"
-}
-
-command_init() {
-    db "CREATE TABLE \"$DB_TBL_PAPERS\"
-        ( doc_id STRING PRIMARY KEY
-        , path STRING
-        )"
-    db "CREATE TABLE \"$DB_TBL_TAGS\"
-        ( tag STRING
-        , doc_id STRING
-        , PRIMARY KEY (tag, doc_id)
-        , FOREIGN KEY (doc_id) REFERENCES \"$DB_TBL_PAPERS\"(doc_id)
-        )"
 }
 
 db_paper_delete() {
     declare -r md5=$(md5cmd "$paper")
     db "DELETE FROM \"$DB_TBL_TAGS\" WHERE doc_id = \"$md5\""
     db "DELETE FROM \"$DB_TBL_PAPERS\" WHERE doc_id = \"$md5\""
-}
-
-command_all_papers() {
-    db "SELECT path FROM \"$DB_TBL_PAPERS\""
 }
 
 db_paper_add() {
@@ -80,6 +77,28 @@ db_tag_add() {
     declare -r md5=$(md5cmd "$paper")
 
     db "INSERT INTO \"$DB_TBL_TAGS\" (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
+}
+
+
+# -----------------------------------------------------------------------------
+# Top-level commands
+# -----------------------------------------------------------------------------
+
+command_init() {
+    db "CREATE TABLE \"$DB_TBL_PAPERS\"
+        ( doc_id STRING PRIMARY KEY
+        , path STRING
+        )"
+    db "CREATE TABLE \"$DB_TBL_TAGS\"
+        ( tag STRING
+        , doc_id STRING
+        , PRIMARY KEY (tag, doc_id)
+        , FOREIGN KEY (doc_id) REFERENCES \"$DB_TBL_PAPERS\"(doc_id)
+        )"
+}
+
+command_all_papers() {
+    db "SELECT path FROM \"$DB_TBL_PAPERS\""
 }
 
 command_tag_show() {
@@ -156,6 +175,11 @@ command_tag_add() {
         db_tag_add "$paper" "$tag"
     done
 }
+
+
+# -----------------------------------------------------------------------------
+# Main dispatch
+# -----------------------------------------------------------------------------
 
 dispatch() {
     declare -r command="$1"
