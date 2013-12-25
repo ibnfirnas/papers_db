@@ -56,7 +56,7 @@ command_init() {
         )"
 }
 
-delete() {
+db_paper_delete() {
     declare -r md5=$(md5cmd "$paper")
     db "DELETE FROM \"$DB_TBL_TAGS\" WHERE doc_id = \"$md5\""
     db "DELETE FROM \"$DB_TBL_PAPERS\" WHERE doc_id = \"$md5\""
@@ -66,14 +66,14 @@ command_all_papers() {
     db "SELECT path FROM \"$DB_TBL_PAPERS\""
 }
 
-add() {
+db_paper_add() {
     declare -r paper="$1"
     [ -f "$paper" ] || die "$paper does not exist"
     declare -r md5=$(md5cmd "$paper")
     db "INSERT INTO \"$DB_TBL_PAPERS\" (doc_id, path) VALUES(\"$md5\", \"$paper\")"
 }
 
-tag_add() {
+db_tag_add() {
     declare -r paper="$1"
     declare -r tag="$2"
 
@@ -122,10 +122,10 @@ command_add() {
     declare -r paper="$1"
     shift
     declare -r tags="$@"
-    add "$paper"
+    db_paper_add "$paper"
     for tag in "$tags";
     do
-        tag_add "$paper" "$tag"
+        db_tag_add "$paper" "$tag"
     done
 }
 
@@ -139,10 +139,10 @@ command_add_from_url() {
         declare -r file_path_tmp="$tmpdir/$file_name"
         declare -r file_path_perm="$DIR_DATA_PAPERS/$file_name"
         mv "$file_path_tmp" "$file_path_perm"
-        add "$file_path_perm"
+        db_paper_add "$file_path_perm"
         shift
         for tag in "$@"; do
-            tag_add "$file_path_perm" "$tag"
+            db_tag_add "$file_path_perm" "$tag"
         done
     else
         echo "Failed to download"
@@ -153,7 +153,7 @@ command_tag_add() {
     paper="$1"
     shift
     for tag in "$@"; do
-        tag_add "$paper" "$tag"
+        db_tag_add "$paper" "$tag"
     done
 }
 
