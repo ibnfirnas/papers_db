@@ -97,7 +97,8 @@ command_tag_search() {
     local subselect="SELECT doc_id FROM \"$DB_TBL_TAGS\" WHERE tag = \"$tag\""
     fi
 
-    for ((i=2;i<=$1;i++)); do
+    for (( i=2; i<=$1; i++ ));
+    do
         local subselect="\
             $subselect \
             INTERSECT SELECT doc_id \
