@@ -123,7 +123,7 @@ command_add() {
     shift
     declare -r tags="$@"
     db_paper_add "$paper"
-    for tag in "$tags";
+    for tag in $tags;
     do
         db_tag_add "$paper" "$tag"
     done
@@ -141,7 +141,7 @@ command_add_from_url() {
     db_paper_add "$file_path_perm"
     shift
     declare -r tags="$@"
-    for tag in "$tags";
+    for tag in $tags;
     do
         db_tag_add "$file_path_perm" "$tag"
     done
