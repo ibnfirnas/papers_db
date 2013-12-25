@@ -27,7 +27,6 @@ env_clean() {
     rm -rf "$DIR_DATA_DOWNLOADS"
 }
 
-
 die() {
     echo "$1"
     exit 1
@@ -112,7 +111,6 @@ tag_search() {
 tag_all() {
     db "SELECT DISTINCT tag FROM tags"
 }
-
 
 dispatch() {
     case "$1" in
