@@ -8,6 +8,9 @@ declare -r DIR_DATA_DOWNLOADS="$DIR_DATA/downloads"
 declare -r DIR_DATA_PAPERS="$DIR_DATA/papers"
 declare -r FILE_DB="$DIR_DATA/papers.db"
 
+declare -r DB_TBL_PAPERS='papers'
+declare -r DB_TBL_TAGS='tags'
+
 
 if ! echo "foo" | md5sum > /dev/null 2>&1; then
     declare -r MD5SUM_CMD='md5'
@@ -41,33 +44,33 @@ db() {
 }
 
 init() {
-    db 'CREATE TABLE papers
+    db "CREATE TABLE \"$DB_TBL_PAPERS\"
         ( doc_id STRING PRIMARY KEY
         , path STRING
-        )'
-    db 'CREATE TABLE tags
+        )"
+    db "CREATE TABLE \"$DB_TBL_TAGS\"
         ( tag STRING
         , doc_id STRING
         , PRIMARY KEY (tag, doc_id)
-        , FOREIGN KEY (doc_id) REFERENCES papers(doc_id)
-        )'
+        , FOREIGN KEY (doc_id) REFERENCES \"$DB_TBL_PAPERS\"(doc_id)
+        )"
 }
 
 delete() {
     declare -r md5=$(md5cmd "$paper")
-    db "DELETE FROM tags WHERE doc_id = \"$md5\""
-    db "DELETE FROM papers WHERE doc_id = \"$md5\""
+    db "DELETE FROM \"$DB_TBL_TAGS\" WHERE doc_id = \"$md5\""
+    db "DELETE FROM \"$DB_TBL_PAPERS\" WHERE doc_id = \"$md5\""
 }
 
 all_papers() {
-    db "SELECT path FROM papers"
+    db "SELECT path FROM \"$DB_TBL_PAPERS\""
 }
 
 add() {
     declare -r paper="$1"
     [ -f "$paper" ] || die "$paper does not exist"
     declare -r md5=$(md5cmd "$paper")
-    db "INSERT INTO papers (doc_id, path) VALUES(\"$md5\", \"$paper\")"
+    db "INSERT INTO \"$DB_TBL_PAPERS\" (doc_id, path) VALUES(\"$md5\", \"$paper\")"
 }
 
 tag_add() {
@@ -76,13 +79,13 @@ tag_add() {
 
     declare -r md5=$(md5cmd "$paper")
 
-    db "INSERT INTO tags (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
+    db "INSERT INTO \"$DB_TBL_TAGS\" (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
 }
 
 tag_show() {
     declare -r paper="$1"
     declare -r md5=$(md5cmd "$paper")
-    db "SELECT tag FROM tags WHERE doc_id = \"$md5\""
+    db "SELECT tag FROM \"$DB_TBL_TAGS\" WHERE doc_id = \"$md5\""
 }
 
 tag_search() {
@@ -91,25 +94,25 @@ tag_search() {
     local subselect=""
     if [ "$#" -gt "1" ]; then
     declare -r tag="${arg[1]}"
-    local subselect="SELECT doc_id FROM tags WHERE tag = \"$tag\""
+    local subselect="SELECT doc_id FROM \"$DB_TBL_TAGS\" WHERE tag = \"$tag\""
     fi
 
     for ((i=2;i<=$1;i++)); do
         local subselect="\
             $subselect \
             INTERSECT SELECT doc_id \
-            FROM tags \
+            FROM \"$DB_TBL_TAGS\" \
             WHERE tag = \"${arg[i]}\"\
         "
     done
 
-    select="SELECT path FROM papers WHERE doc_id IN ($subselect)"
+    select="SELECT path FROM \"$DB_TBL_PAPERS\" WHERE doc_id IN ($subselect)"
 
     db "$select"
 }
 
 tag_all() {
-    db "SELECT DISTINCT tag FROM tags"
+    db "SELECT DISTINCT tag FROM \"$DB_TBL_TAGS\""
 }
 
 dispatch() {
