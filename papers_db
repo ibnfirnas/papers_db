@@ -93,8 +93,10 @@ command_tag_search() {
 
     local subselect=""
     if [ "$#" -gt "1" ]; then
-    declare -r tag="${arg[1]}"
-    local subselect="SELECT doc_id FROM \"$DB_TBL_TAGS\" WHERE tag = \"$tag\""
+        declare -r tag="${arg[1]}"
+        local subselect="\
+            SELECT doc_id FROM \"$DB_TBL_TAGS\" WHERE tag = \"$tag\"\
+        "
     fi
 
     for (( i=2; i<=$1; i++ ));
