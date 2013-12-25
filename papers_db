@@ -140,7 +140,8 @@ command_add_from_url() {
     mv "$file_path_tmp" "$file_path_perm"
     db_paper_add "$file_path_perm"
     shift
-    for tag in "$@";
+    declare -r tags="$@"
+    for tag in "$tags";
     do
         db_tag_add "$file_path_perm" "$tag"
     done
