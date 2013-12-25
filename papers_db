@@ -32,7 +32,7 @@ md5cmd() {
 # Environment create/destroy
 # -----------------------------------------------------------------------------
 
-env_create() {
+env_setup() {
     if ! echo "foo" | md5sum > /dev/null 2>&1; then
         MD5SUM_CMD='md5 -r'
     else
@@ -199,7 +199,7 @@ dispatch() {
 
 main() {
     trap env_clean EXIT
-    env_create
+    env_setup
     dispatch "$@"
 }
 
