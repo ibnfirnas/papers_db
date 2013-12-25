@@ -2,10 +2,29 @@
 
 set -e
 
+DIR_ROOT="$HOME/.papers_db"
+DIR_DATA="$DIR_ROOT/data"
+DIR_DATA_DOWNLOADS="$DIR_DATA/downloads"
+DIR_DATA_PAPERS="$DIR_DATA/papers"
+FILE_DB="$DIR_DATA/papers.db"
+
+
 MD5SUM_CMD="md5sum"
 if ! echo "foo" | $MD5SUM_CMD >/dev/null 2>&1; then
     MD5SUM_CMD=md5
 fi
+
+
+env_create() {
+    mkdir -p "$DIR_ROOT"
+    mkdir -p "$DIR_DATA"
+    mkdir -p "$DIR_DATA_DOWNLOADS"
+    mkdir -p "$DIR_DATA_PAPERS"
+}
+
+env_clean() {
+    rm -rf "$DIR_DATA_DOWNLOADS"
+}
 
 
 die() {
@@ -17,26 +36,30 @@ md5cmd() {
     $MD5SUM_CMD "$1" | awk '{ print $1 }'
 }
 
+db() {
+    sqlite3 "$FILE_DB" "$@"
+}
+
 init() {
-    sqlite3 papers.db 'CREATE TABLE papers (doc_id STRING PRIMARY KEY, path STRING)'
-    sqlite3 papers.db 'CREATE TABLE tags (tag STRING, doc_id STRING, PRIMARY KEY (tag, doc_id), FOREIGN KEY (doc_id) REFERENCES papers(doc_id))'
+    db 'CREATE TABLE papers (doc_id STRING PRIMARY KEY, path STRING)'
+    db 'CREATE TABLE tags (tag STRING, doc_id STRING, PRIMARY KEY (tag, doc_id), FOREIGN KEY (doc_id) REFERENCES papers(doc_id))'
 }
 
 delete() {
     md5=$(md5cmd "$paper")
-    sqlite3 papers.db "DELETE FROM tags WHERE doc_id = \"$md5\""
-    sqlite3 papers.db "DELETE FROM papers WHERE doc_id = \"$md5\""
+    db "DELETE FROM tags WHERE doc_id = \"$md5\""
+    db "DELETE FROM papers WHERE doc_id = \"$md5\""
 }
 
 all_papers() {
-    sqlite3 papers.db "SELECT path FROM papers"
+    db "SELECT path FROM papers"
 }
 
 add() {
     paper="$1"
     [ -f "$paper" ] || die "$paper does not exist"
     md5=$(md5cmd "$paper")
-    sqlite3 papers.db "INSERT INTO papers (doc_id, path) VALUES(\"$md5\", \"$paper\")"
+    db "INSERT INTO papers (doc_id, path) VALUES(\"$md5\", \"$paper\")"
 }
 
 tag_add() {
@@ -45,13 +68,13 @@ tag_add() {
 
     md5=$(md5cmd "$paper")
 
-    sqlite3 papers.db "INSERT INTO tags (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
+    db "INSERT INTO tags (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
 }
 
 tag_show() {
     paper="$1"
     md5=$(md5cmd "$paper")
-    sqlite3 papers.db "SELECT tag FROM tags WHERE doc_id = \"$md5\""
+    db "SELECT tag FROM tags WHERE doc_id = \"$md5\""
 }
 
 tag_search() {
@@ -69,15 +92,17 @@ tag_search() {
 
     select="SELECT path FROM papers WHERE doc_id IN ($subselect)"
 
-    sqlite3 papers.db "$select"
+    db "$select"
 }
 
 tag_all() {
-    sqlite3 papers.db "SELECT DISTINCT tag FROM tags"
+    db "SELECT DISTINCT tag FROM tags"
 }
 
 
 main() {
+    env_create
+
     case "$1" in
         "init")
             init
@@ -93,25 +118,23 @@ main() {
             done
     ;;  "add-from-url")
             shift
-            tmpdir=$(mktemp -d papers_db.XXXXXXXXXX)
+            tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
             pushd "$tmpdir"
             wget_status=$(wget "$1"; echo $?)
-            fname="$(ls)"
+            file_name="$(ls)"
             popd
-            if [ -f "$tmpdir/$fname" -a "$wget_status" -eq 0 ]; then
-                mkdir -p Papers
-                mv "$tmpdir/$fname" "Papers/$fname"
-                add "Papers/$fname"
+            if [ -f "$tmpdir/$file_name" -a "$wget_status" -eq 0 ]; then
+                file_path_tmp="$tmpdir/$file_name"
+                file_path_perm="$DIR_DATA_PAPERS/$file_name"
+                mv "$file_path_tmp" "$file_path_perm"
+                add "$file_path_perm"
                 shift
                 for tag in "$@"; do
-                    tag_add "Papers/$fname" "$tag"
+                    tag_add "$file_path_perm" "$tag"
                 done
             else
-                rm -rf "$tmpdir"
                 echo "Failed to download"
-                exit 1
             fi
-            rm -rf "$tmpdir"
     ;;  "tag-show")
             tag_show "$2"
     ;;  "tag-search")
@@ -130,6 +153,8 @@ main() {
             echo "Unknown command: $1"
             exit 1
     esac
+
+    env_clean
 }
 
 main "$@"
