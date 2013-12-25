@@ -43,7 +43,7 @@ db() {
     sqlite3 "$FILE_DB" "$@"
 }
 
-init() {
+command_init() {
     db "CREATE TABLE \"$DB_TBL_PAPERS\"
         ( doc_id STRING PRIMARY KEY
         , path STRING
@@ -62,7 +62,7 @@ delete() {
     db "DELETE FROM \"$DB_TBL_PAPERS\" WHERE doc_id = \"$md5\""
 }
 
-all_papers() {
+command_all_papers() {
     db "SELECT path FROM \"$DB_TBL_PAPERS\""
 }
 
@@ -82,13 +82,13 @@ tag_add() {
     db "INSERT INTO \"$DB_TBL_TAGS\" (tag, doc_id) VALUES (\"$tag\", \"$md5\")"
 }
 
-tag_show() {
+command_tag_show() {
     declare -r paper="$1"
     declare -r md5=$(md5cmd "$paper")
     db "SELECT tag FROM \"$DB_TBL_TAGS\" WHERE doc_id = \"$md5\""
 }
 
-tag_search() {
+command_tag_search() {
     declare -r arg=("$@")
 
     local subselect=""
@@ -111,16 +111,16 @@ tag_search() {
     db "$select"
 }
 
-tag_all() {
+command_tag_all() {
     db "SELECT DISTINCT tag FROM \"$DB_TBL_TAGS\""
 }
 
 dispatch() {
     case "$1" in
         "init")
-            init
+            command_init
     ;;  "all")
-            all_papers
+            command_all_papers
     ;;  "add")
             shift
             declare -r paper="$1"
@@ -149,12 +149,12 @@ dispatch() {
                 echo "Failed to download"
             fi
     ;;  "tag-show")
-            tag_show "$2"
+            command_tag_show "$2"
     ;;  "tag-search")
             shift
-            tag_search "$#" "$@"
+            command_tag_search "$#" "$@"
     ;;  "tag-all")
-            tag_all
+            command_tag_all
     ;;  "tag-add")
             shift
             paper="$1"
