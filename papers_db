@@ -115,65 +115,64 @@ command_tag_all() {
     db "SELECT DISTINCT tag FROM \"$DB_TBL_TAGS\""
 }
 
-dispatch() {
-    case "$1" in
-        "init")
-            command_init
-    ;;  "all")
-            command_all_papers
-    ;;  "add")
-            shift
-            declare -r paper="$1"
-            add "$paper"
-            shift
-            for tag in "$@"; do
-                tag_add "$paper" "$tag"
-            done
-    ;;  "add-from-url")
-            shift
-            declare -r tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
-            pushd "$tmpdir"
-            declare -r wget_status=$(wget "$1"; echo $?)
-            declare -r file_name="$(ls)"
-            popd
-            if [ -f "$tmpdir/$file_name" -a "$wget_status" -eq 0 ]; then
-                declare -r file_path_tmp="$tmpdir/$file_name"
-                declare -r file_path_perm="$DIR_DATA_PAPERS/$file_name"
-                mv "$file_path_tmp" "$file_path_perm"
-                add "$file_path_perm"
-                shift
-                for tag in "$@"; do
-                    tag_add "$file_path_perm" "$tag"
-                done
-            else
-                echo "Failed to download"
-            fi
-    ;;  "tag-show")
-            command_tag_show "$2"
-    ;;  "tag-search")
-            shift
-            command_tag_search "$#" "$@"
-    ;;  "tag-all")
-            command_tag_all
-    ;;  "tag-add")
-            shift
-            paper="$1"
-            shift
-            for tag in "$@"; do
-                tag_add "$paper" "$tag"
-            done
-    ;;  *)
-            echo "Unknown command: $1"
-            exit 1
-    esac
+command_add() {
+    shift
+    declare -r paper="$1"
+    add "$paper"
+    shift
+    for tag in "$@"; do
+        tag_add "$paper" "$tag"
+    done
 }
 
+command_add_from_url() {
+    shift
+    declare -r tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
+    pushd "$tmpdir"
+    declare -r wget_status=$(wget "$1"; echo $?)
+    declare -r file_name="$(ls)"
+    popd
+    if [ -f "$tmpdir/$file_name" -a "$wget_status" -eq 0 ]; then
+        declare -r file_path_tmp="$tmpdir/$file_name"
+        declare -r file_path_perm="$DIR_DATA_PAPERS/$file_name"
+        mv "$file_path_tmp" "$file_path_perm"
+        add "$file_path_perm"
+        shift
+        for tag in "$@"; do
+            tag_add "$file_path_perm" "$tag"
+        done
+    else
+        echo "Failed to download"
+    fi
+}
+
+command_tag_add() {
+    shift
+    paper="$1"
+    shift
+    for tag in "$@"; do
+        tag_add "$paper" "$tag"
+    done
+}
+
+dispatch() {
+    case "$1" in
+        "init"         ) command_init
+    ;;  "all"          ) command_all_papers
+    ;;  "add"          ) command_add "$@"
+    ;;  "add-from-url" ) command_add_from_url "$@"
+    ;;  "tag-show"     ) command_tag_show "$2"
+    ;;  "tag-search"   ) shift; command_tag_search "$#" "$@"
+    ;;  "tag-all"      ) command_tag_all
+    ;;  "tag-add"      ) command_tag_add
+    ;;  *              ) die "Unknown command: $1"
+    esac
+}
 
 main() {
     trap env_clean EXIT
     env_create
     dispatch "$@"
 }
-
 
 main "$@"
