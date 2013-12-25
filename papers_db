@@ -118,9 +118,11 @@ command_tag_all() {
 
 command_add() {
     declare -r paper="$1"
-    add "$paper"
     shift
-    for tag in "$@"; do
+    declare -r tags="$@"
+    add "$paper"
+    for tag in "$tags";
+    do
         tag_add "$paper" "$tag"
     done
 }
