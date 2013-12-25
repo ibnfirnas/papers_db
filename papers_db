@@ -150,7 +150,9 @@ command_add_from_url() {
 command_tag_add() {
     paper="$1"
     shift
-    for tag in "$@"; do
+    declare -r tags="$@"
+    for tag in $tags;
+    do
         db_tag_add "$paper" "$tag"
     done
 }
