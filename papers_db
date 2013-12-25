@@ -132,21 +132,18 @@ command_add() {
 command_add_from_url() {
     declare -r tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
     pushd "$tmpdir"
-    declare -r wget_status=$(wget "$1"; echo $?)
+    wget "$1"
     declare -r file_name="$(ls)"
     popd
-    if [ -f "$tmpdir/$file_name" -a "$wget_status" -eq 0 ]; then
-        declare -r file_path_tmp="$tmpdir/$file_name"
-        declare -r file_path_perm="$DIR_DATA_PAPERS/$file_name"
-        mv "$file_path_tmp" "$file_path_perm"
-        db_paper_add "$file_path_perm"
-        shift
-        for tag in "$@"; do
-            db_tag_add "$file_path_perm" "$tag"
-        done
-    else
-        echo "Failed to download"
-    fi
+    declare -r file_path_tmp="$tmpdir/$file_name"
+    declare -r file_path_perm="$DIR_DATA_PAPERS/$file_name"
+    mv "$file_path_tmp" "$file_path_perm"
+    db_paper_add "$file_path_perm"
+    shift
+    for tag in "$@";
+    do
+        db_tag_add "$file_path_perm" "$tag"
+    done
 }
 
 command_tag_add() {
