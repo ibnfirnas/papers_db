@@ -11,12 +11,7 @@ declare -r FILE_DB="$DIR_DATA/papers.db"
 declare -r DB_TBL_PAPERS='papers'
 declare -r DB_TBL_TAGS='tags'
 
-
-if ! echo "foo" | md5sum > /dev/null 2>&1; then
-    declare -r MD5SUM_CMD='md5 -r'
-else
-    declare -r MD5SUM_CMD="md5sum"
-fi
+declare    MD5SUM_CMD=''  # Determined at environment setup
 
 
 # -----------------------------------------------------------------------------
@@ -38,6 +33,11 @@ md5cmd() {
 # -----------------------------------------------------------------------------
 
 env_create() {
+    if ! echo "foo" | md5sum > /dev/null 2>&1; then
+        MD5SUM_CMD='md5 -r'
+    else
+        MD5SUM_CMD="md5sum"
+    fi
     mkdir -p "$DIR_ROOT"
     mkdir -p "$DIR_DATA"
     mkdir -p "$DIR_DATA_DOWNLOADS"
