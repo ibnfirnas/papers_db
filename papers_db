@@ -116,7 +116,6 @@ command_tag_all() {
 }
 
 command_add() {
-    shift
     declare -r paper="$1"
     add "$paper"
     shift
@@ -126,7 +125,6 @@ command_add() {
 }
 
 command_add_from_url() {
-    shift
     declare -r tmpdir=$(mktemp -d "$DIR_DATA_DOWNLOADS"/file.XXX)
     pushd "$tmpdir"
     declare -r wget_status=$(wget "$1"; echo $?)
@@ -147,7 +145,6 @@ command_add_from_url() {
 }
 
 command_tag_add() {
-    shift
     paper="$1"
     shift
     for tag in "$@"; do
@@ -156,16 +153,18 @@ command_tag_add() {
 }
 
 dispatch() {
-    case "$1" in
+    declare -r command="$1"
+    shift
+    case "$command" in
         "init"         ) command_init
     ;;  "all"          ) command_all_papers
     ;;  "add"          ) command_add "$@"
     ;;  "add-from-url" ) command_add_from_url "$@"
-    ;;  "tag-show"     ) command_tag_show "$2"
-    ;;  "tag-search"   ) shift; command_tag_search "$#" "$@"
+    ;;  "tag-show"     ) command_tag_show "$1"
+    ;;  "tag-search"   ) command_tag_search "$#" "$@"
     ;;  "tag-all"      ) command_tag_all
-    ;;  "tag-add"      ) command_tag_add
-    ;;  *              ) die "Unknown command: $1"
+    ;;  "tag-add"      ) command_tag_add "$@"
+    ;;  *              ) die "Unknown command: $command"
     esac
 }
 
